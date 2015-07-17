@@ -1,5 +1,7 @@
 # good-enough
 
+[![Build Status](https://travis-ci.org/achingbrain/good-enough.svg?branch=master)](https://travis-ci.org/achingbrain/good-enough) [![Coverage Status](https://coveralls.io/repos/achingbrain/good-enough/badge.svg?branch=master&service=github)](https://coveralls.io/github/achingbrain/good-enough?branch=master) [![Dependency Status](https://david-dm.org/achingbrain/good-enough.svg)](https://david-dm.org/achingbrain/good-enough)
+
 Sometimes you just want easily machine parseable `DEBUG`, `INFO`, `WARN`, `ERROR` style logging:
 
 ```sh
