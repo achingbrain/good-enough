@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "A good logger with useful output",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha --reporter=nyan",
     "test:coverage": "istanbul --include-all-sources cover _mocha",
     "test:coverage:check": "istanbul --include-all-sources cover _mocha && istanbul check-coverage --statement 100 --branch 100 --function 100",
     "lint": "standard",
