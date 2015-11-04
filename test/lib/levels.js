@@ -4,7 +4,6 @@ var expect = require('chai').expect
 var levels = require('../../lib/levels')
 
 describe('lib/levels', function () {
-
   it('should stringify levels', function () {
     expect(levels.INFO.toString()).to.equal('INFO')
   })

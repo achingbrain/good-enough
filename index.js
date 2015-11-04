@@ -1,5 +1,9 @@
+var LEVELS = require('./lib/levels')
 
-module.exports = {
-  levels: require('./lib/levels'),
-  logger: require('./lib/logger')
+module.exports = require('./lib/logger')
+
+for (var key in LEVELS) {
+  module.exports[key] = LEVELS[key]
 }
+
+module.exports.logLevelFromString = LEVELS.fromString

@@ -17,7 +17,10 @@ describe('lib/logger', function () {
     Logger = proxyquire('../../../lib/logger', {
       './log': logHandler
     })
-    logger = new Logger()
+    logger = new Logger({
+      log: '*',
+      foo: '*'
+    })
   })
 
   it('should not log low priority event', function () {
@@ -29,6 +32,21 @@ describe('lib/logger', function () {
 
     stream.push({
       event: 'log',
+      tags: [LEVELS.DEBUG, 'foo']
+    })
+
+    expect(logHandler.called).to.be.false
+  })
+
+  it('should not log unlistened for event', function () {
+    Logger.LEVEL = LEVELS.INFO
+
+    var stream = through2.obj()
+
+    logger.init(stream, null, sinon.stub())
+
+    stream.push({
+      event: 'request',
       tags: [LEVELS.DEBUG, 'foo']
     })
 

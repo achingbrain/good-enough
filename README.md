@@ -27,7 +27,7 @@ server.register({
   register: Good,
   options: {
     reporters: [{
-      reporter: require('good-enough').logger,
+      reporter: require('good-enough'),
       events: {
         error: '*',
         log: '*',
@@ -44,10 +44,10 @@ server.register({
 Then do some logging:
 
 ```javascript
-var DEBUG = require('good-enough').levels.DEBUG
-var INFO = require('good-enough').levels.INFO
-var WARN = require('good-enough').levels.WARN
-var ERROR = require('good-enough').levels.ERROR
+var DEBUG = require('good-enough').DEBUG
+var INFO = require('good-enough').INFO
+var WARN = require('good-enough').WARN
+var ERROR = require('good-enough').ERROR
 
 // give some context to the logs
 var CONTEXT = 'my:request-handler'
@@ -79,9 +79,9 @@ request.log(['some-other-tag'], 'Will not be logged')
 It's possible to dynamically alter the log level:
 
 ```javascript
-var logger = require('good-enough').logger
-var DEBUG = require('good-enough').levels.DEBUG
-var INFO = require('good-enough').levels.INFO
+var logger = require('good-enough')
+var DEBUG = require('good-enough').DEBUG
+var INFO = require('good-enough').INFO
 
 // show debug logs
 logger.LEVEL = DEBUG
@@ -95,9 +95,8 @@ logger.LEVEL = INFO
 It's possible to create the log level constants from strings:
 
 ```javascript
-var levels = require('good-enough').levels
+var logger = require('good-enough')
+var INFO = require('good-enough').INFO
 
-var INFO = levels.INFO
-
-console.info(INFO === levels.fromString('INFO')) // true
+console.info(INFO === logger.logLevelFromString('INFO')) // true
 ```

@@ -21,7 +21,7 @@ describe('lib/logger/request', function () {
   })
 
   it('should convert string stack trace back into error', function () {
-    var error = new Error();
+    var error = new Error()
 
     var event = {
       tags: [ERROR],
