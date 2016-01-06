@@ -110,4 +110,24 @@ describe('lib/logger', function () {
 
     expect(logHandler.called).to.be.false
   })
+
+  it('should override log destination', function (done) {
+    var stream = through2.obj()
+
+    var logger = new Logger({
+      request: '*'
+    }, {
+      output: through2(function (chunk, encoding, callback) {
+        callback()
+        done()
+      })
+    })
+
+    logger.init(stream, null, sinon.stub())
+
+    stream.push({
+      event: 'request',
+      tags: [LEVELS.WARN]
+    })
+  })
 })
