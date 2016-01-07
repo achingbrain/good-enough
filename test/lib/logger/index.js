@@ -6,6 +6,7 @@ var expect = require('chai').expect
 var proxyquire = require('proxyquire')
 var LEVELS = require('../../../lib/levels')
 var through2 = require('through2')
+var util = require('util')
 
 describe('lib/logger', function () {
   var Logger
@@ -117,10 +118,78 @@ describe('lib/logger', function () {
     var logger = new Logger({
       request: '*'
     }, {
-      output: through2(function (chunk, encoding, callback) {
-        callback()
-        done()
-      })
+      transports: {
+        test: through2(function (chunk, encoding, callback) {
+          callback()
+          done()
+        })
+      }
+    })
+
+    logger.init(stream, null, sinon.stub())
+
+    stream.push({
+      event: 'request',
+      tags: [LEVELS.WARN]
+    })
+  })
+
+  it('should pass error to other transport when logging fails', function (done) {
+    var error = new Error('Urk!')
+    var stream = through2.obj()
+
+    var called = 0
+
+    var logger = new Logger({
+      request: '*'
+    }, {
+      transports: {
+        faulty: through2(function (chunk, encoding, callback) {
+          callback(error)
+        }),
+        fine: through2(function (chunk, encoding, callback) {
+          callback()
+          called++
+
+          if (chunk.toString().indexOf('Urk!') !== -1) {
+            expect(called).to.equal(2)
+            done()
+          }
+        })
+      }
+    })
+
+    logger.init(stream, null, sinon.stub())
+
+    stream.push({
+      event: 'request',
+      tags: [LEVELS.WARN]
+    })
+  })
+
+  it('should log error to console when only one transport is present and it fails to log', function (done) {
+    var error = new Error('Urk!')
+    var stream = through2.obj()
+
+    var err = console.error
+
+    console.error = function () {
+      console.error = err
+
+      var string = util.format.call(null, arguments)
+
+      expect(string).to.contain('Urk!')
+      done()
+    }
+
+    var logger = new Logger({
+      request: '*'
+    }, {
+      transports: {
+        faulty: through2(function (chunk, encoding, callback) {
+          callback(error)
+        })
+      }
     })
 
     logger.init(stream, null, sinon.stub())

@@ -103,7 +103,7 @@ console.info(INFO === logger.logLevelFromString('INFO')) // true
 
 ## Specifying message output
 
-By default all messages are printed to `process.stdout`.  To override this, pass a [`stream.Writeable`](https://nodejs.org/api/stream.html#stream_class_stream_writable) as `config.output`:
+By default all messages are printed to `process.stdout`.  To override this, pass one or more [`stream.Writeable`](https://nodejs.org/api/stream.html#stream_class_stream_writable) objects as a hash to `config.transports`:
 
 ```javascript
 var through = require('through2');
@@ -117,9 +117,12 @@ server.register({
         // ...
       },
       config: {
-        output: through(function (chunk, encoding, callback) {
-          // do something with chunk/encoding and then call the callback
-        })
+        transports: {
+          stdout: process.stdout,
+          custom: through(function (chunk, encoding, callback) {
+            // do something with chunk/encoding and then call the callback
+          })
+        }
       }
     }]
   }
