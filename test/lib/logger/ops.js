@@ -81,6 +81,75 @@ describe('lib/logger/ops', function () {
     expect(stream.push.getCall(2).args[0].data).to.contain('200: 0')
   })
 
+  it('should survive sparse load events', function () {
+    var event = {
+      os: {
+        load: [1, 2, 3],
+        mem: {}
+      },
+      load: {
+        requests: {
+          8080: {
+          }
+        }
+      },
+      proc: {
+        mem: {}
+      }
+    }
+    var stream = {
+      push: sinon.stub()
+    }
+
+    ops(stream, event)
+
+    expect(stream.push.getCall(2).args[0].data).to.contain('200: 0')
+  })
+
+  it('should survive more sparse load events', function () {
+    var event = {
+      os: {
+        load: [1, 2, 3],
+        mem: {}
+      },
+      load: {
+        requests: {
+          8080: null
+        }
+      },
+      proc: {
+        mem: {}
+      }
+    }
+    var stream = {
+      push: sinon.stub()
+    }
+
+    ops(stream, event)
+
+    expect(stream.push.getCall(2).args[0].data).to.contain('200: 0')
+  })
+
+  it('should survive even more sparse load events', function () {
+    var event = {
+      os: {
+        load: [1, 2, 3],
+        mem: {}
+      },
+      load: {
+        requests: null
+      },
+      proc: {
+        mem: {}
+      }
+    }
+    var stream = {
+      push: sinon.stub()
+    }
+
+    ops(stream, event)
+  })
+
   it('should log results in json format when configured to do so', function () {
     ops = proxyquire('../../../lib/logger/ops', {
       './format': sinon.stub().returnsArg(0),
