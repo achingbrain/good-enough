@@ -16,9 +16,28 @@ describe('lib/logger/ops', function () {
 
   it('should log multiple events', function () {
     var event = {
-      os: 'os',
-      load: 'load',
-      proc: 'proc'
+      os: {
+        load: [1, 2, 3],
+        mem: {}
+      },
+      load: {
+        requests: {
+          8080: {
+            statusCodes: {
+              200: 1
+            }
+          }
+        },
+        concurrents: {
+          8080: 0
+        },
+        responseTimes: {
+          8080: {}
+        }
+      },
+      proc: {
+        mem: {}
+      }
     }
     var stream = {
       push: sinon.stub()
@@ -27,8 +46,80 @@ describe('lib/logger/ops', function () {
     ops(stream, event)
 
     expect(stream.push.callCount).to.equal(3)
-    expect(stream.push.getCall(0).args[0].data).to.equal('"os"')
-    expect(stream.push.getCall(1).args[0].data).to.equal('"proc"')
-    expect(stream.push.getCall(2).args[0].data).to.equal('"load"')
+  })
+
+  it('should log default status codes', function () {
+    var event = {
+      os: {
+        load: [1, 2, 3],
+        mem: {}
+      },
+      load: {
+        requests: {
+          8080: {
+            statusCodes: {
+            }
+          }
+        },
+        concurrents: {
+          8080: 0
+        },
+        responseTimes: {
+          8080: {}
+        }
+      },
+      proc: {
+        mem: {}
+      }
+    }
+    var stream = {
+      push: sinon.stub()
+    }
+
+    ops(stream, event)
+
+    expect(stream.push.getCall(2).args[0].data).to.contain('200: 0')
+  })
+
+  it('should log results in json format when configured to do so', function () {
+    ops = proxyquire('../../../lib/logger/ops', {
+      './format': sinon.stub().returnsArg(0),
+      './config': {
+        json: true
+      }
+    })
+
+    var event = {
+      os: {
+        load: [],
+        mem: {}
+      },
+      load: {
+        requests: {
+          8080: {
+            statusCodes: {}
+          }
+        },
+        concurrents: {
+          8080: 0
+        },
+        responseTimes: {
+          8080: {}
+        }
+      },
+      proc: {
+        mem: {}
+      }
+    }
+    var stream = {
+      push: sinon.stub()
+    }
+
+    ops(stream, event)
+
+    expect(stream.push.callCount).to.equal(3)
+    expect(stream.push.getCall(0).args[0].data).to.equal(JSON.stringify(event.os))
+    expect(stream.push.getCall(1).args[0].data).to.equal(JSON.stringify(event.proc))
+    expect(stream.push.getCall(2).args[0].data).to.equal(JSON.stringify(event.load))
   })
 })

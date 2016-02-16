@@ -128,3 +128,25 @@ server.register({
   }
 });
 ```
+
+## Formatting messages
+
+By default messages are formatted as human readable strings.  To format errors and performance information as JSON, pass `json: true` as plugin config:
+
+```javascript
+server.register({
+  register: Good,
+  options: {
+    reporters: [{
+      reporter: require('good-enough'),
+      events: {
+        // ...
+      },
+      config: {
+        // ..
+        json: true
+      }
+    }]
+  }
+});
+```
