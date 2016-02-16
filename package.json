@@ -1,6 +1,6 @@
 {
   "name": "good-enough",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "A good logger with useful output",
   "scripts": {
     "test": "mocha --reporter=nyan",
