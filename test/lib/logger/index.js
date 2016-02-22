@@ -119,10 +119,10 @@ describe('lib/logger', function () {
       request: '*'
     }, {
       transports: {
-        test: through2(function (chunk, encoding, callback) {
+        test: function (chunk, encoding, callback) {
           callback()
           done()
-        })
+        }
       }
     })
 
@@ -144,18 +144,18 @@ describe('lib/logger', function () {
       request: '*'
     }, {
       transports: {
-        faulty: through2(function (chunk, encoding, callback) {
+        faulty: function (chunk, encoding, callback) {
           callback(error)
-        }),
-        fine: through2(function (chunk, encoding, callback) {
+        },
+        fine: function (chunk, encoding, callback) {
           callback()
           called++
 
           if (chunk.toString().indexOf('Urk!') !== -1) {
-            expect(called).to.equal(2)
+            expect(called).to.equal(1)
             done()
           }
-        })
+        }
       }
     })
 
@@ -186,9 +186,9 @@ describe('lib/logger', function () {
       request: '*'
     }, {
       transports: {
-        faulty: through2(function (chunk, encoding, callback) {
+        faulty: function (chunk, encoding, callback) {
           callback(error)
-        })
+        }
       }
     })
 

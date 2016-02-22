@@ -52,12 +52,12 @@ var ERROR = require('good-enough').ERROR
 // give some context to the logs
 var CONTEXT = 'my:request-handler'
 
-var requestHandler = function (request, reply) {
+var requestHandler = (request, reply) => {
   request.log([INFO, CONTEXT], 'Hello world')
 
   request.log([WARN, CONTEXT], 'I can be a string')
 
-  request.log([DEBUG, CONTEXT], function () {
+  request.log([DEBUG, CONTEXT], () => {
     return 'If an expensive operation is needed for logging, wrap it in a function'.
   })
 }
@@ -103,7 +103,7 @@ console.info(INFO === logger.logLevelFromString('INFO')) // true
 
 ## Specifying message output
 
-By default all messages are printed to `process.stdout`.  To override this, pass one or more [`stream.Writeable`](https://nodejs.org/api/stream.html#stream_class_stream_writable) objects as a hash to `config.transports`:
+By default all messages are printed to `process.stdout`.  To override this, pass one or more functions as a hash to `config.transports`:
 
 ```javascript
 var through = require('through2');
@@ -118,10 +118,10 @@ server.register({
       },
       config: {
         transports: {
-          stdout: process.stdout,
-          custom: through(function (chunk, encoding, callback) {
+          stdout: process.stdout.write.bind(process.stdout),
+          custom: (chunk, encoding, callback) => {
             // do something with chunk/encoding and then call the callback
-          })
+          }
         }
       }
     }]
