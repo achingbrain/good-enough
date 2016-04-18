@@ -3,11 +3,11 @@
   "version": "4.0.0",
   "description": "A good logger with useful output",
   "scripts": {
-    "test": "mocha --reporter=nyan",
-    "test:coverage": "istanbul --include-all-sources cover _mocha",
-    "test:coverage:check": "istanbul --include-all-sources cover _mocha && istanbul check-coverage --statement 100 --branch 100 --function 100",
+    "test": "ava",
+    "test:coverage": "nyc --all npm test && nyc report --reporter=html",
+    "test:coverage:check": "npm run test:coverage && nyc check-coverage --lines 100",
     "lint": "standard",
-    "coveralls": "cat ./coverage/lcov.info | coveralls"
+    "coveralls": "nyc report --reporter=text-lcov | coveralls"
   },
   "author": "Alex Potsides",
   "license": "ISC",
@@ -16,6 +16,7 @@
     "url": "git@github.com:achingbrain/good-enough.git"
   },
   "dependencies": {
+    "async": "^2.0.0-rc.3",
     "chalk": "^1.0.0",
     "good-squeeze": "^2.1.0",
     "moment": "^2.11.2",
@@ -23,10 +24,13 @@
     "through2": "^2.0.0"
   },
   "devDependencies": {
+    "ava": "^0.14.0",
     "chai": "^3.0.0",
     "coveralls": "^2.11.2",
+    "faker": "^3.0.1",
     "istanbul": "^0.4.0",
     "mocha": "^2.2.5",
+    "nyc": "^6.4.0",
     "pre-commit": "^1.0.10",
     "proxyquire": "^1.5.0",
     "sinon": "^1.15.3",
@@ -35,5 +39,11 @@
   "pre-commit": [
     "lint",
     "test:coverage:check"
-  ]
+  ],
+  "nyc": {
+    "exclude": [
+      "coverage",
+      "test"
+    ]
+  }
 }

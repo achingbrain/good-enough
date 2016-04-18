@@ -2,17 +2,9 @@
 
 [![Build Status](https://travis-ci.org/achingbrain/good-enough.svg?branch=master)](https://travis-ci.org/achingbrain/good-enough) [![Coverage Status](https://coveralls.io/repos/achingbrain/good-enough/badge.svg?branch=master&service=github)](https://coveralls.io/github/achingbrain/good-enough?branch=master) [![Dependency Status](https://david-dm.org/achingbrain/good-enough.svg)](https://david-dm.org/achingbrain/good-enough)
 
-Sometimes you just want easily machine parseable `DEBUG`, `INFO`, `WARN`, `ERROR` style logging:
+A multiple transport logging plugin that lets you apply arbitrary transforms to incoming log events.
 
-```sh
-2015-07-16 16:53:22+0100 worker#2 30791 DEBUG my:request-handler request-id:51236 Hello world
-```
-
-The format is:
-
-```sh
-$TIME_STAMP $WORKER_ID $PID $LEVEL $CONTEXT $REQUEST_ID $MESSAGE
-```
+Supports classic `DEBUG`, `INFO`, `WARN` and `ERROR` style logging.
 
 ## Usage
 
@@ -55,11 +47,7 @@ var CONTEXT = 'my:request-handler'
 var requestHandler = (request, reply) => {
   request.log([INFO, CONTEXT], 'Hello world')
 
-  request.log([WARN, CONTEXT], 'I can be a string')
-
-  request.log([DEBUG, CONTEXT], () => {
-    return 'If an expensive operation is needed for logging, wrap it in a function'.
-  })
+  request.log([WARN, CONTEXT], `I can be template string: ${request.payload}`)
 }
 ```
 
@@ -99,6 +87,8 @@ var logger = require('good-enough')
 var INFO = require('good-enough').INFO
 
 console.info(INFO === logger.logLevelFromString('INFO')) // true
+
+console.info(INFO === logger.logLevelFromString('info')) // true (not case sensitive)
 ```
 
 ## Specifying message output
@@ -129,9 +119,61 @@ server.register({
 });
 ```
 
-## Formatting messages
+## Transforming messages
 
-By default messages are formatted as human readable strings.  To format errors and performance information as JSON, pass `json: true` as plugin config:
+Be default events are formatted and turned into strings.  This has the side effect of losing information (log levels, timestamps, etc).
+
+To define your own transforms, pass a `transforms` hash as an option:
+
+```javascript
+var through = require('through2');
+
+server.register({
+  register: Good,
+  options: {
+    reporters: [{
+      reporter: require('good-enough'),
+      events: {
+        // ...
+      },
+      config: {
+        transforms: {
+          toString: function (event, callback) {
+            callback(null, JSON.stringify(event))
+          }
+        },
+        transports: {
+          // ...
+        }
+      }
+    }]
+  }
+});
+```
+
+The first transform in the hash will be passed an event object which will have some or all of the following properties:
+
+```javascript
+{
+  host: String, // defaults to `os.hostname()`
+  pid: Number, // id of the current process
+  request: String, // the id of the request that was in flight when this event was logged
+  tags: Array,
+  type: String, // 'wreck', 'request', 'response', 'ops', 'error' or 'log'
+  timestamp: Date, // when the message was logged
+  level: String, // 'INFO', 'WARN', 'ERROR' or 'DEBUG'
+
+  // optional fields
+  message: String, // a message
+  context: String, // if `type` is log, the context you passed to `request.log`
+  statusCode: Number, // if `type` is 'wreck' this is the response from the wreck request, if it is `response` it's the response from your app
+  headers: Object // if `type` is 'wreck' this will be the response headers from the request
+}
+```
+
+## Specifying which transforms to apply to transports
+
+By default all transforms will be applied to an event in the order they are specified.  To override this, pass an array as a transport with the transport function being the last item in the array.
 
 ```javascript
 server.register({
@@ -143,8 +185,52 @@ server.register({
         // ...
       },
       config: {
-        // ..
-        json: true
+        transforms: {
+          toString: (event, callback) => {
+            callback(null, JSON.stringify(event))
+          },
+          overrideHostName: (event, callback) => {
+            event.host = 'foo'
+            callback(null, event)
+          }
+        },
+        transports: {
+          // will have toString applied to all events before passing to stdout
+          stdout: ['toString', process.stdout.write.bind(process.stdout)],
+          // will not have the toString transform applied to any arguments
+          stderr: process.stderr.write.bind(process.stdout),
+          // will have overrideHostName and toString applied sequentially to all events
+          stdout: ['overrideHostName', 'toString', (chunk, encoding, callback) => {
+            // ... some code here
+          }],
+        }
+      }
+    }]
+  }
+});
+```
+
+## Handling log events
+
+There are a [default set of event handlers available](./handlers) but these can be overridden:
+
+```javascript
+server.register({
+  register: Good,
+  options: {
+    reporters: [{
+      reporter: require('good-enough'),
+      events: {
+        // ...
+      },
+      config: {
+        handlers: {
+          error: (stream, event) => {
+            // change `event` properties here
+
+            stream.push(event)
+          }
+        }
       }
     }]
   }

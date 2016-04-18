@@ -1,10 +1,6 @@
-var describe = require('mocha').describe
-var it = require('mocha').it
-var expect = require('chai').expect
-var logger = require('../')
+import test from 'ava'
+import logger from '../'
 
-describe('index', function () {
-  it('should export something useful', function () {
-    expect(Object.keys(logger)).to.not.be.empty
-  })
+test('index should export something useful', (t) => {
+  t.truthy(Object.keys(logger).length)
 })

@@ -1,8 +1,10 @@
-var LEVELS = require('./lib/levels')
+'use strict'
 
-module.exports = require('./lib/logger')
+const LEVELS = require('./levels')
 
-for (var key in LEVELS) {
+module.exports = require('./logger')
+
+for (const key in LEVELS) {
   module.exports[key] = LEVELS[key]
 }
 
