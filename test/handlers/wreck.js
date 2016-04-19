@@ -1,17 +1,10 @@
 import test from 'ava'
-import proxyquire from 'proxyquire'
+import wreck from '../../handlers/wreck'
 
 test.cb('handlers/wreck should log successful response event', (t) => {
-  const wreck = proxyquire('../../handlers/wreck', {
-    './error': function (stream, event) {
-      stream.push(event)
-    }
-  })
-
   const event = {
     timeSpent: 10,
     request: {
-      id: 'request-id',
       method: 'GET',
       url: 'url'
     },
@@ -23,7 +16,6 @@ test.cb('handlers/wreck should log successful response event', (t) => {
   wreck({
     push: function (ev) {
       t.true(ev.tags.indexOf('wreck') !== -1)
-      t.is(ev.request, event.request.id)
       t.is(ev.statusCode, event.response.statusCode)
       t.is(ev.responseTime, event.timeSpent)
       t.is(ev.path, event.request.url)
@@ -34,16 +26,9 @@ test.cb('handlers/wreck should log successful response event', (t) => {
 })
 
 test.cb('handlers/wreck should log unsuccessful response event', (t) => {
-  const wreck = proxyquire('../../handlers/wreck', {
-    './error': function (stream, event) {
-      stream.push(event)
-    }
-  })
-
   const event = {
     timeSpent: 10,
     request: {
-      id: 'request-id',
       method: 'GET',
       url: 'url'
     },
@@ -55,7 +40,6 @@ test.cb('handlers/wreck should log unsuccessful response event', (t) => {
   wreck({
     push: function (ev) {
       t.true(ev.tags.indexOf('wreck') !== -1)
-      t.is(ev.request, event.request.id)
       t.is(ev.statusCode, event.response.statusCode)
       t.is(ev.responseTime, event.timeSpent)
       t.is(ev.path, event.request.url)
@@ -66,16 +50,9 @@ test.cb('handlers/wreck should log unsuccessful response event', (t) => {
 })
 
 test.cb('handlers/wreck should log error response event', (t) => {
-  const wreck = proxyquire('../../handlers/wreck', {
-    './error': function (stream, event) {
-      stream.push(event)
-    }
-  })
-
   const event = {
     timeSpent: 10,
     request: {
-      id: 'request-id',
       method: 'GET',
       url: 'url'
     },
@@ -87,7 +64,6 @@ test.cb('handlers/wreck should log error response event', (t) => {
   wreck({
     push: function (ev) {
       t.true(ev.tags.indexOf('wreck') !== -1)
-      t.is(ev.request, event.request.id)
       t.is(ev.statusCode, event.response.statusCode)
       t.is(ev.responseTime, event.timeSpent)
       t.is(ev.path, event.request.url)
@@ -98,16 +74,9 @@ test.cb('handlers/wreck should log error response event', (t) => {
 })
 
 test.cb('handlers/wreck should log an error event', (t) => {
-  const wreck = proxyquire('../../handlers/wreck', {
-    './error': function (stream, event) {
-      stream.push(event)
-    }
-  })
-
   const event = {
     timeSpent: 10,
     request: {
-      id: 'request-id',
       method: 'GET',
       url: 'url'
     },
@@ -121,9 +90,88 @@ test.cb('handlers/wreck should log an error event', (t) => {
   wreck({
     push: function (ev) {
       t.true(ev.tags.indexOf('wreck') !== -1)
-      t.is(ev.request, event.request.id)
-      t.is(ev.error.message, event.error.message)
-      t.is(ev.error.stack, event.error.stack)
+      t.is(ev.message, event.error.stack)
+      t.end()
+    }
+  }, event)
+})
+
+test.cb('handlers/wreck should log a client timeout', (t) => {
+  const event = {
+    request: {
+      method: 'GET',
+      url: 'url'
+    },
+    response: {},
+    error: {
+      message: 'Client request timeout'
+    }
+  }
+
+  wreck({
+    push: function (ev) {
+      t.true(ev.tags.indexOf('wreck') !== -1)
+      t.is(ev.statusCode, 504)
+      t.end()
+    }
+  }, event)
+})
+
+test.cb('handlers/wreck should log a client error', (t) => {
+  const event = {
+    request: {
+      method: 'GET',
+      url: 'url'
+    },
+    response: {},
+    error: {
+      message: 'Client request error'
+    }
+  }
+
+  wreck({
+    push: function (ev) {
+      t.true(ev.tags.indexOf('wreck') !== -1)
+      t.is(ev.statusCode, 502)
+      t.end()
+    }
+  }, event)
+})
+
+test.cb('handlers/wreck should log an unknown error', (t) => {
+  const event = {
+    request: {
+      method: 'GET',
+      url: 'url'
+    },
+    response: {},
+    error: {
+      message: 'Divvent knaa'
+    }
+  }
+
+  wreck({
+    push: function (ev) {
+      t.true(ev.tags.indexOf('wreck') !== -1)
+      t.is(ev.statusCode, 500)
+      t.end()
+    }
+  }, event)
+})
+
+test.cb('handlers/wreck should log a minimal error', (t) => {
+  const event = {
+    request: {
+      method: 'GET',
+      url: 'url'
+    },
+    error: 'Ah divvent knaa weor me troosers are'
+  }
+
+  wreck({
+    push: function (ev) {
+      t.true(ev.tags.indexOf('wreck') !== -1)
+      t.is(ev.statusCode, 500)
       t.end()
     }
   }, event)

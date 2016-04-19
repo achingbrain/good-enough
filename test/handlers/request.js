@@ -1,59 +1,69 @@
 import test from 'ava'
-import sinon from 'sinon'
-import proxyquire from 'proxyquire'
+import request from '../../handlers/request'
 import LEVELS from '../../levels'
 
-test('handlers/request should convert string stack trace back into error', (t) => {
-  const errorLogger = sinon.stub()
-  const request = proxyquire('../../handlers/request', {
-    './error': errorLogger
-  })
-
-  const error = new Error()
-
-  const event = {
-    tags: [LEVELS.ERROR],
-    data: error.stack
-  }
-
-  request({}, event)
-
-  t.true(errorLogger.getCall(0).args[1].error instanceof Error)
-})
-
-test('handlers/request should handle an actual error', (t) => {
-  const errorLogger = sinon.stub()
-  const request = proxyquire('../../handlers/request', {
-    './format': sinon.stub().returnsArg(0),
-    './error': errorLogger
-  })
-
+test.cb('handlers/request should handle an actual error', (t) => {
   const error = new Error('Panic in the disco!')
   const event = {
     tags: [LEVELS.ERROR],
     data: error
   }
 
-  request({}, event)
-
-  t.is(errorLogger.getCall(0).args[1].error, error)
+  request({
+    push: (e) => {
+      t.is(e.message, error.stack)
+      t.end()
+    }
+  }, event)
 })
 
-test('handlers/request should pass non-error event through', (t) => {
-  const errorLogger = sinon.stub()
-  const request = proxyquire('../../handlers/request', {
-    './format': sinon.stub().returnsArg(0),
-    './error': errorLogger
-  })
+test.cb('handlers/request should handle an actual error without a stack trace', (t) => {
+  const error = new Error('Panic in the disco!')
+  delete error.stack
+  const event = {
+    tags: [LEVELS.ERROR],
+    data: error
+  }
 
+  request({
+    push: (e) => {
+      t.is(e.message, error.toString())
+      t.end()
+    }
+  }, event)
+})
+
+test.cb('handlers/request should handle a boom error', (t) => {
+  const event = {
+    tags: [LEVELS.ERROR],
+    data: {
+      isBoom: true,
+      output: {
+        payload: {
+          message: 'urk!'
+        }
+      }
+    }
+  }
+
+  request({
+    push: (e) => {
+      t.is(e.message, event.data.output.payload.message)
+      t.end()
+    }
+  }, event)
+})
+
+test.cb('handlers/request should pass non-error event through', (t) => {
   const event = {
     tags: [LEVELS.INFO],
     data: 'foo'
   }
 
   request({
-    push: sinon.stub()
+    push: (e) => {
+      t.is(e.message, event.data)
+      t.end()
+    }
   }, event)
-
-  t.false(errorLogger.called)
 })

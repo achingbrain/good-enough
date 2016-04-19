@@ -3,7 +3,7 @@
   "version": "4.1.0",
   "description": "A good logger with useful output",
   "scripts": {
-    "test": "ava",
+    "test": "ava --verbose",
     "test:coverage": "nyc --all npm test && nyc report --reporter=html",
     "test:coverage:check": "npm run test:coverage && nyc check-coverage --lines 100",
     "lint": "standard",

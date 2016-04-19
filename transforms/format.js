@@ -42,12 +42,12 @@ module.exports = (event) => {
     args.push(colourStatusCode(event.statusCode))
   }
 
-  if (event.message) {
-    args.push(event.tags.indexOf(ERROR) === -1 ? event.message : chalk.red(event.message))
-  }
-
   if (event.responseTime) {
     args.push(event.responseTime + 'ms')
+  }
+
+  if (event.message) {
+    args.push(event.tags.indexOf(ERROR) === -1 ? event.message : chalk.red(event.message))
   }
 
   return args.join(' ').trim() + '\n'

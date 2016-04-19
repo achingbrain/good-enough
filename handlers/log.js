@@ -1,7 +1,7 @@
 'use strict'
 
 const os = require('os')
-const levels = Object.keys(require('../levels'))
+const LEVELS = Object.keys(require('../levels'))
 
 module.exports = (stream, event) => {
   var message = event.data
@@ -18,7 +18,7 @@ module.exports = (stream, event) => {
     timestamp: event.timestamp || new Date(),
     type: 'log',
     level: event.tags.find((tag) => {
-      return levels.indexOf(tag.toString().toUpperCase()) !== -1
+      return LEVELS.indexOf(tag.toString().toUpperCase()) !== -1
     }),
 
     message: message

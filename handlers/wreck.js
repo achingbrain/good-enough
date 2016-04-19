@@ -1,43 +1,43 @@
 'use strict'
 
 const os = require('os')
-const error = require('./error')
 const INFO = require('../levels').INFO
 const ERROR = require('../levels').ERROR
 
 module.exports = (stream, event) => {
-  if (event.error) {
-    var err = new Error()
+  const tags = [INFO, 'wreck']
+  let message = null
+  let statusCode = event.response ? event.response.statusCode : 0
 
-    for (var key in event.error) {
-      err[key] = event.error[key]
+  if (event.error) {
+    message = event.error.stack || event.error.message || event.error.toString()
+
+    if (message.indexOf('Client request timeout') !== -1) {
+      statusCode = 504
+    } else if (message.indexOf('Client request error') !== -1 ||
+    message.indexOf('Maximum redirections reached') !== -1 ||
+    message.indexOf('Received redirection without location') !== -1) {
+      statusCode = 502
+    } else {
+      statusCode = 500
     }
 
-    err.method = event.request.method
-    err.url = event.request.url
-
-    return error(stream, {
-      timestamp: event.timestamp,
-      pid: event.pid,
-      request: event.request.id,
-      tags: [ERROR, 'wreck'],
-      error: err
-    })
+    tags[0] = ERROR
   }
 
   stream.push({
     host: os.hostname(),
     pid: process.pid,
-    request: event.request.id,
-    tags: [INFO, 'wreck'],
+    tags: tags,
     timestamp: event.timestamp || new Date(),
     type: 'wreck',
-    level: INFO,
+    level: tags[0],
 
     method: event.request.method.toUpperCase(),
     responseTime: event.timeSpent,
     path: event.request.url,
-    statusCode: event.response.statusCode,
-    headers: event.response.headers
+    statusCode: statusCode,
+    headers: event.response ? event.response.headers : {},
+    message: message
   })
 }
