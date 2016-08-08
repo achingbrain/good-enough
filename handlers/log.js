@@ -3,14 +3,14 @@
 const os = require('os')
 const LEVELS = Object.keys(require('../levels'))
 
-module.exports = (stream, event) => {
+module.exports = (event) => {
   var message = event.data
 
   if (message instanceof Error) {
     message = message.stack || message.toString()
   }
 
-  stream.push({
+  return [{
     host: os.hostname(),
     pid: process.pid,
     request: event.request,
@@ -22,5 +22,5 @@ module.exports = (stream, event) => {
     }),
 
     message: message
-  })
+  }]
 }

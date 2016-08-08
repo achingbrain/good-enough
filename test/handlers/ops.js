@@ -1,5 +1,4 @@
 import test from 'ava'
-import sinon from 'sinon'
 import ops from '../../handlers/ops'
 
 test('handlers/ops should transform ops event', (t) => {
@@ -27,14 +26,9 @@ test('handlers/ops should transform ops event', (t) => {
       mem: {}
     }
   }
+  const ev = ops(event)
 
-  const stream = {
-    push: sinon.stub()
-  }
-
-  ops(stream, event)
-
-  t.is(stream.push.callCount, 3)
+  t.is(ev.length, 3)
 })
 
 test('handlers/ops should log default status codes', (t) => {
@@ -61,13 +55,9 @@ test('handlers/ops should log default status codes', (t) => {
       mem: {}
     }
   }
-  var stream = {
-    push: sinon.stub()
-  }
+  const ev = ops(event)
 
-  ops(stream, event)
-
-  t.truthy(stream.push.getCall(2).args[0].message.indexOf('200: 0') > -1)
+  t.truthy(ev[2].message.indexOf('200: 0') > -1)
 })
 
 test('handlers/ops should survive sparse load events', (t) => {
@@ -86,13 +76,9 @@ test('handlers/ops should survive sparse load events', (t) => {
       mem: {}
     }
   }
-  const stream = {
-    push: sinon.stub()
-  }
+  const ev = ops(event)
 
-  ops(stream, event)
-
-  t.truthy(stream.push.getCall(2).args[0].message.indexOf('200: 0') > -1)
+  t.truthy(ev[2].message.indexOf('200: 0') > -1)
 })
 
 test('handlers/ops should survive more sparse load events', (t) => {
@@ -110,13 +96,9 @@ test('handlers/ops should survive more sparse load events', (t) => {
       mem: {}
     }
   }
-  var stream = {
-    push: sinon.stub()
-  }
+  const ev = ops(event)
 
-  ops(stream, event)
-
-  t.truthy(stream.push.getCall(2).args[0].message.indexOf('200: 0') > -1)
+  t.truthy(ev[2].message.indexOf('200: 0') > -1)
 })
 
 test('handlers/ops should survive even more sparse load events', (t) => {
@@ -132,9 +114,5 @@ test('handlers/ops should survive even more sparse load events', (t) => {
       mem: {}
     }
   }
-  var stream = {
-    push: sinon.stub()
-  }
-
-  ops(stream, event)
+  ops(event)
 })

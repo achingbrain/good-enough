@@ -1,36 +1,31 @@
 import test from 'ava'
 import sinon from 'sinon'
-import through2 from 'through2'
 import LEVELS from '../levels'
 import Logger from '../logger'
 import util from 'util'
 
 test('logger should refuse transports configured with nonexistent transforms', (t) => {
-  t.throws(() => {
-    new Logger({
+  t.throws(() => new Logger({
+    events: {
       log: '*'
-    }, {
-      transports: {
-        foo: ['non-existent', () => {}]
-      }
-    }).toString()
-  })
+    },
+    transports: {
+      foo: ['non-existent', () => {}]
+    }
+  }))
 })
 
 test('logger should survive no options being passed', (t) => {
-  const logger = new Logger({
-    log: '*'
-  })
+  const logger = new Logger()
 
   t.truthy(logger.transports.toString)
 })
 
 test.cb('logger should configure transports with transforms', (t) => {
-  const stream = through2.obj()
-
-  new Logger({
-    log: '*'
-  }, {
+  const stream = new Logger({
+    events: {
+      log: '*'
+    },
     transforms: {
       addWorld: (event, callback) => {
         callback(null, event.message + ' world')
@@ -43,9 +38,9 @@ test.cb('logger should configure transports with transforms', (t) => {
         t.end()
       }]
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'log',
     tags: [LEVELS.INFO],
     data: 'hello'
@@ -53,11 +48,10 @@ test.cb('logger should configure transports with transforms', (t) => {
 })
 
 test.cb('logger should configure multiple transports with transforms', (t) => {
-  const stream = through2.obj()
-
-  new Logger({
-    log: '*'
-  }, {
+  const stream = new Logger({
+    events: {
+      log: '*'
+    },
     transforms: {
       addHello: (event, callback) => {
         callback(null, 'hello ' + event.message)
@@ -73,9 +67,9 @@ test.cb('logger should configure multiple transports with transforms', (t) => {
         t.end()
       }]
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'log',
     tags: [LEVELS.INFO],
     data: 'world'
@@ -83,20 +77,19 @@ test.cb('logger should configure multiple transports with transforms', (t) => {
 })
 
 test('logger should not log low priority event', (t) => {
-  const logHandler = sinon.stub()
-  const stream = through2.obj()
-
   Logger.LEVEL = LEVELS.INFO
 
-  new Logger({
-    log: '*'
-  }, {
+  const logHandler = sinon.stub()
+  const stream = new Logger({
+    events: {
+      log: '*'
+    },
     transports: {
       foo: logHandler
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'log',
     tags: [LEVELS.DEBUG, 'foo']
   })
@@ -105,39 +98,37 @@ test('logger should not log low priority event', (t) => {
 })
 
 test.cb('logger should log high priority event', (t) => {
-  const stream = through2.obj()
   Logger.LEVEL = LEVELS.INFO
-
-  new Logger({
-    log: '*'
-  }, {
+  const stream = new Logger({
+    events: {
+      log: '*'
+    },
     transports: {
       foo: () => {
         t.end()
       }
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'log',
     tags: [LEVELS.WARN, 'foo']
   })
 })
 
 test.cb('logger should not log unlistened for event', (t) => {
-  const logHandler = sinon.stub()
-  const stream = through2.obj()
   Logger.LEVEL = LEVELS.INFO
-
-  new Logger({
-    log: '*'
-  }, {
+  const logHandler = sinon.stub()
+  const stream = new Logger({
+    events: {
+      log: '*'
+    },
     transports: {
       foo: logHandler
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'some-other-event',
     tags: [LEVELS.ERROR, 'foo']
   })
@@ -149,19 +140,18 @@ test.cb('logger should not log unlistened for event', (t) => {
 })
 
 test.cb('logger should survive untagged event', (t) => {
-  const logHandler = sinon.stub()
-  const stream = through2.obj()
   Logger.LEVEL = LEVELS.INFO
-
-  new Logger({
-    log: '*'
-  }, {
+  const logHandler = sinon.stub()
+  const stream = new Logger({
+    events: {
+      log: '*'
+    },
     transports: {
       foo: logHandler
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'log'
   })
 
@@ -172,19 +162,18 @@ test.cb('logger should survive untagged event', (t) => {
 })
 
 test.cb('logger should survive event with no tags', (t) => {
-  const logHandler = sinon.stub()
-  const stream = through2.obj()
   Logger.LEVEL = LEVELS.INFO
-
-  new Logger({
-    log: '*'
-  }, {
+  const logHandler = sinon.stub()
+  const stream = new Logger({
+    events: {
+      log: '*'
+    },
     transports: {
       foo: logHandler
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'log',
     tags: []
   })
@@ -196,19 +185,17 @@ test.cb('logger should survive event with no tags', (t) => {
 })
 
 test.cb('logger pass error to other transport when logging fails', (t) => {
-  const error = new Error('Urk!')
-  const stream = through2.obj()
-
   let called = 0
-
-  new Logger({
-    request: '*'
-  }, {
+  const error = new Error('Urk!')
+  const stream = new Logger({
+    events: {
+      request: '*'
+    },
     transports: {
-      faulty: function (chunk, encoding, callback) {
+      faulty: (chunk, encoding, callback) => {
         callback(error)
       },
-      fine: function (chunk, encoding, callback) {
+      fine: (chunk, encoding, callback) => {
         callback()
         called++
 
@@ -218,9 +205,9 @@ test.cb('logger pass error to other transport when logging fails', (t) => {
         }
       }
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'request',
     tags: [LEVELS.WARN]
   })
@@ -228,7 +215,6 @@ test.cb('logger pass error to other transport when logging fails', (t) => {
 
 test.cb('logger should log error to console when only one transport is present and it fails to log', (t) => {
   const error = new Error('Urk!')
-  const stream = through2.obj()
   const err = console.error
 
   console.error = function () {
@@ -240,17 +226,18 @@ test.cb('logger should log error to console when only one transport is present a
     t.end()
   }
 
-  new Logger({
-    request: '*'
-  }, {
+  const stream = new Logger({
+    events: {
+      request: '*'
+    },
     transports: {
-      faulty: function (chunk, encoding, callback) {
+      faulty: (chunk, encoding, callback) => {
         callback(error)
       }
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'request',
     tags: [LEVELS.WARN]
   })
@@ -258,7 +245,6 @@ test.cb('logger should log error to console when only one transport is present a
 
 test.cb('logger should log error when transforming an event fails', (t) => {
   const error = new Error('Urk!')
-  const stream = through2.obj()
   const err = console.error
 
   console.error = function () {
@@ -270,17 +256,18 @@ test.cb('logger should log error when transforming an event fails', (t) => {
     t.end()
   }
 
-  new Logger({
-    request: '*'
-  }, {
+  const stream = new Logger({
+    events: {
+      request: '*'
+    },
     transforms: {
-      faulty: function (event, callback) {
+      faulty: (event, callback) => {
         callback(error)
       }
     }
-  }).init(stream, null, sinon.stub())
+  })
 
-  stream.push({
+  stream.write({
     event: 'request',
     tags: [LEVELS.WARN]
   })

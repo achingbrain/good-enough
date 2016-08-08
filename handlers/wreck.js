@@ -4,7 +4,7 @@ const os = require('os')
 const INFO = require('../levels').INFO
 const ERROR = require('../levels').ERROR
 
-module.exports = (stream, event) => {
+module.exports = (event) => {
   const tags = [INFO, 'wreck']
   let message = null
   let statusCode = event.response ? event.response.statusCode : 0
@@ -25,7 +25,7 @@ module.exports = (stream, event) => {
     tags[0] = ERROR
   }
 
-  stream.push({
+  return [{
     host: os.hostname(),
     pid: process.pid,
     tags: tags,
@@ -39,5 +39,5 @@ module.exports = (stream, event) => {
     statusCode: statusCode,
     headers: event.response ? event.response.headers : {},
     message: message
-  })
+  }]
 }

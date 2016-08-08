@@ -2,38 +2,30 @@ import test from 'ava'
 import request from '../../handlers/request'
 import LEVELS from '../../levels'
 
-test.cb('handlers/request should handle an actual error', (t) => {
+test('handlers/request should handle an actual error', (t) => {
   const error = new Error('Panic in the disco!')
   const event = {
     tags: [LEVELS.ERROR],
     data: error
   }
+  const ev = request(event)[0]
 
-  request({
-    push: (e) => {
-      t.is(e.message, error.stack)
-      t.end()
-    }
-  }, event)
+  t.is(ev.message, error.stack)
 })
 
-test.cb('handlers/request should handle an actual error without a stack trace', (t) => {
+test('handlers/request should handle an actual error without a stack trace', (t) => {
   const error = new Error('Panic in the disco!')
   delete error.stack
   const event = {
     tags: [LEVELS.ERROR],
     data: error
   }
+  const ev = request(event)[0]
 
-  request({
-    push: (e) => {
-      t.is(e.message, error.toString())
-      t.end()
-    }
-  }, event)
+  t.is(ev.message, error.toString())
 })
 
-test.cb('handlers/request should handle a boom error', (t) => {
+test('handlers/request should handle a boom error', (t) => {
   const event = {
     tags: [LEVELS.ERROR],
     data: {
@@ -45,25 +37,17 @@ test.cb('handlers/request should handle a boom error', (t) => {
       }
     }
   }
+  const ev = request(event)[0]
 
-  request({
-    push: (e) => {
-      t.is(e.message, event.data.output.payload.message)
-      t.end()
-    }
-  }, event)
+  t.is(ev.message, event.data.output.payload.message)
 })
 
-test.cb('handlers/request should pass non-error event through', (t) => {
+test('handlers/request should pass non-error event through', (t) => {
   const event = {
     tags: [LEVELS.INFO],
     data: 'foo'
   }
+  const ev = request(event)[0]
 
-  request({
-    push: (e) => {
-      t.is(e.message, event.data)
-      t.end()
-    }
-  }, event)
+  t.is(ev.message, event.data)
 })

@@ -11,40 +11,44 @@ Supports classic `DEBUG`, `INFO`, `WARN` and `ERROR` style logging.
 First, register the logger:
 
 ```javascript
-var Hapi = require('hapi')
+const Hapi = require('hapi')
 
-var server = new Hapi.Server()
+const server = new Hapi.Server()
 // ...
 server.register({
   register: Good,
   options: {
-    reporters: [{
-      reporter: require('good-enough'),
-      events: {
-        error: '*',
-        log: '*',
-        request: '*',
-        response: '*',
-        wreck: '*',
-        ops: '*'
+    reporters: {
+      enough: {
+        module: 'good-enough',
+        args: [{
+          events: {
+            error: '*',
+            log: '*',
+            request: '*',
+            response: '*',
+            wreck: '*',
+            ops: '*'
+          }
+        }]
       }
     }]
   }
-});
+})
 ```
 
 Then do some logging:
 
 ```javascript
-var DEBUG = require('good-enough').DEBUG
-var INFO = require('good-enough').INFO
-var WARN = require('good-enough').WARN
-var ERROR = require('good-enough').ERROR
+const DEBUG = require('good-enough').DEBUG
+const INFO = require('good-enough').INFO
+const WARN = require('good-enough').WARN
+const ERROR = require('good-enough').ERROR
 
 // give some context to the logs
-var CONTEXT = 'my:request-handler'
+const CONTEXT = 'my:request-handler'
 
-var requestHandler = (request, reply) => {
+const requestHandler = (request, reply) => {
   request.log([INFO, CONTEXT], 'Hello world')
 
   request.log([WARN, CONTEXT], `I can be template string: ${request.payload}`)
@@ -67,9 +71,9 @@ request.log(['some-other-tag'], 'Will not be logged')
 It's possible to dynamically alter the log level:
 
 ```javascript
-var logger = require('good-enough')
-var DEBUG = require('good-enough').DEBUG
-var INFO = require('good-enough').INFO
+const logger = require('good-enough')
+const DEBUG = require('good-enough').DEBUG
+const INFO = require('good-enough').INFO
 
 // show debug logs
 logger.LEVEL = DEBUG
@@ -83,8 +87,8 @@ logger.LEVEL = INFO
 It's possible to create the log level constants from strings:
 
 ```javascript
-var logger = require('good-enough')
-var INFO = require('good-enough').INFO
+const logger = require('good-enough')
+const INFO = require('good-enough').INFO
 
 console.info(INFO === logger.logLevelFromString('INFO')) // true
 
@@ -96,27 +100,26 @@ console.info(INFO === logger.logLevelFromString('info')) // true (not case sensi
 By default all messages are printed to `process.stdout`.  To override this, pass one or more functions as a hash to `config.transports`:
 
 ```javascript
-var through = require('through2');
+const through = require('through2')
 
 server.register({
   register: Good,
   options: {
-    reporters: [{
-      reporter: require('good-enough'),
-      events: {
-        // ...
-      },
-      config: {
-        transports: {
-          stdout: process.stdout.write.bind(process.stdout),
-          custom: (chunk, encoding, callback) => {
-            // do something with chunk/encoding and then call the callback
+    reporters: {
+      enough: {
+        module: 'good-enough',
+        args: [{
+          transports: {
+            stdout: process.stdout.write.bind(process.stdout),
+            custom: (chunk, encoding, callback) => {
+              // do something with chunk/encoding and then call the callback
+            }
           }
-        }
+        }]
       }
     }]
   }
-});
+})
 ```
 
 ## Transforming messages
@@ -126,29 +129,31 @@ Be default events are formatted and turned into strings.  This has the side effe
 To define your own transforms, pass a `transforms` hash as an option:
 
 ```javascript
-var through = require('through2');
+const through = require('through2')
 
 server.register({
   register: Good,
   options: {
-    reporters: [{
-      reporter: require('good-enough'),
-      events: {
-        // ...
-      },
-      config: {
-        transforms: {
-          toString: function (event, callback) {
-            callback(null, JSON.stringify(event))
+    reporters: {
+      enough: {
+        module: 'good-enough',
+        args: [{
+          events: {
+            // ...
+          },
+          transforms: {
+            toString: function (event, callback) {
+              callback(null, JSON.stringify(event))
+            }
+          },
+          transports: {
+            // ...
           }
-        },
-        transports: {
-          // ...
-        }
+        }]
       }
     }]
   }
-});
+})
 ```
 
 The first transform in the hash will be passed an event object which will have some or all of the following properties:
@@ -179,35 +184,37 @@ By default all transforms will be applied to an event in the order they are spec
 server.register({
   register: Good,
   options: {
-    reporters: [{
-      reporter: require('good-enough'),
-      events: {
-        // ...
-      },
-      config: {
-        transforms: {
-          toString: (event, callback) => {
-            callback(null, JSON.stringify(event))
+    reporters: {
+      enough: {
+        module: 'good-enough',
+        args: [{
+          events: {
+            // ...
           },
-          overrideHostName: (event, callback) => {
-            event.host = 'foo'
-            callback(null, event)
+          transforms: {
+            toString: (event, callback) => {
+              callback(null, JSON.stringify(event))
+            },
+            overrideHostName: (event, callback) => {
+              event.host = 'foo'
+              callback(null, event)
+            }
+          },
+          transports: {
+            // will have toString applied to all events before passing to stdout
+            stdout: ['toString', process.stdout.write.bind(process.stdout)],
+            // will not have the toString transform applied to any arguments
+            stderr: process.stderr.write.bind(process.stdout),
+            // will have overrideHostName and toString applied sequentially to all events
+            stdout: ['overrideHostName', 'toString', (chunk, encoding, callback) => {
+              // ... some code here
+            }],
           }
-        },
-        transports: {
-          // will have toString applied to all events before passing to stdout
-          stdout: ['toString', process.stdout.write.bind(process.stdout)],
-          // will not have the toString transform applied to any arguments
-          stderr: process.stderr.write.bind(process.stdout),
-          // will have overrideHostName and toString applied sequentially to all events
-          stdout: ['overrideHostName', 'toString', (chunk, encoding, callback) => {
-            // ... some code here
-          }],
-        }
+        }]
       }
-    }]
+    }
   }
-});
+})
 ```
 
 ## Handling log events
@@ -218,21 +225,23 @@ There are a [default set of event handlers available](./handlers) but these can 
 server.register({
   register: Good,
   options: {
-    reporters: [{
-      reporter: require('good-enough'),
-      events: {
-        // ...
-      },
-      config: {
-        handlers: {
-          error: (stream, event) => {
-            // change `event` properties here
+    reporters: {
+      enough: {
+        module: 'good-enough',
+        args: [{
+          events: {
+            // ...
+          },
+          handlers: {
+            error: (stream, event) => {
+              // change `event` properties here
 
-            stream.push(event)
+              stream.push(event)
+            }
           }
-        }
+        }]
       }
-    }]
+    }
   }
-});
+})
 ```

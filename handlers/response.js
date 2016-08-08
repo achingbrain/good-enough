@@ -3,8 +3,8 @@
 const os = require('os')
 const INFO = require('../levels').INFO
 
-module.exports = (stream, event) => {
-  stream.push({
+module.exports = (event) => {
+  return [{
     host: os.hostname(),
     pid: process.pid,
     request: event.id,
@@ -18,5 +18,5 @@ module.exports = (stream, event) => {
     path: event.path,
     statusCode: event.statusCode,
     remoteAddress: event.source.remoteAddress
-  })
+  }]
 }

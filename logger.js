@@ -1,23 +1,34 @@
 'use strict'
 
-const through = require('through2')
 const INFO = require('./levels').INFO
-const Squeeze = require('good-squeeze').Squeeze
 const toString = require('./transforms/to-string')
 const waterfall = require('async/waterfall')
 const os = require('os')
+const Stream = require('stream')
 
-class Logger {
-  constructor (events, options) {
+class Logger extends Stream.Transform {
+  constructor (options) {
+    super({
+      objectMode: true
+    })
+
     options = options || {}
     options.host = options.host || os.hostname()
 
-    this.squeeze = new Squeeze(events)
+    this.events = options.events || {
+      error: '*',
+      log: '*',
+      request: '*',
+      response: '*',
+      wreck: '*',
+      ops: '*'
+    }
+
     this.transforms = options.transforms || {
       toString: toString
     }
     this.transports = options.transports || {
-      stdout: process.stdout
+      stdout: process.stdout.write.bind(process.stdout)
     }
 
     var transforms = Object.keys(this.transforms)
@@ -52,58 +63,46 @@ class Logger {
     }
   }
 
-  init (stream, emitter, callback) {
-    const self = this
+  _transform (data, encoding, next) {
+    var event = data.event
 
-    const normaliseEvent = through.obj((data, encoding, next) => {
-      var event = data.event
-
-      var show = event === 'log' ? (data.tags || []).some((tag) => {
-        if (!tag.isHigherPriority) {
-          return false
-        }
-
-        return tag.isHigherPriority(module.exports.LEVEL)
-      }) : true
-
-      if (data.event !== 'log') {
-        show = true
+    var show = event === 'log' ? (data.tags || []).some((tag) => {
+      if (!tag.isHigherPriority) {
+        return false
       }
 
-      if (show && self.handlers[event]) {
-        self.handlers[event](normaliseEvent, data)
-      }
+      return tag.isHigherPriority(module.exports.LEVEL)
+    }) : true
 
-      return next()
-    })
+    if (data.event !== 'log') {
+      show = true
+    }
 
-    const sendToTransports = through.obj((data, encoding, next) => {
-      // don't block for logging
-      next()
+    if (!this.events[data.event]) {
+      show = false
+    }
 
-      self.transformAndTransportMessage(self.transports, data, encoding)
-    })
+    if (show && this.handlers[event]) {
+      this.handlers[event](data).forEach((event) => {
+        this.transformAndTransportMessage(this.transports, event, encoding)
+      })
+    }
 
-    stream.pipe(this.squeeze).pipe(normaliseEvent).pipe(sendToTransports)
-
-    callback()
+    return next()
   }
 
   transformAndTransportMessage (transports, data, encoding) {
-    const self = this
-
     // make sure we can't change the incoming event
     const event = Object.freeze(data)
 
+    // apply each transform to the event before passing it to the transport
     Object.keys(transports).forEach((name) => {
       let transforms = transports[name].slice()
       const transport = transforms.pop()
 
-      transforms = transforms.map((name) => {
-        return self.transforms[name]
-      })
+      transforms = transforms.map((name) => this.transforms[name])
 
-      transforms.unshift(function (callback) {
+      transforms.unshift((callback) => {
         callback(null, event)
       })
 
@@ -114,21 +113,19 @@ class Logger {
 
         transport(result, encoding, (error) => {
           if (error) {
-            self.logLoggingError(transports, name, error)
+            this.logLoggingError(name, error, encoding)
           }
         })
       })
     })
   }
 
-  logLoggingError (transports, failedTransport, error) {
-    const self = this
+  logLoggingError (failedTransport, error, encoding) {
     const otherTransports = {}
 
-    Object.keys(transports)
-    .forEach((name) => {
+    Object.keys(this.transports).forEach((name) => {
       if (name !== failedTransport) {
-        otherTransports[name] = transports[name]
+        otherTransports[name] = this.transports[name]
       }
     })
 
@@ -137,13 +134,11 @@ class Logger {
       return console.error(failedTransport, 'failed to log event and there were no other transports available:', error)
     }
 
-    self.handlers.error({
-      push: (event) => {
-        self.transformAndTransportMessage(otherTransports, event)
-      }
-    }, {
+    const event = this.handlers.error({
       error: error
-    })
+    })[0]
+
+    this.transformAndTransportMessage(otherTransports, event, encoding)
   }
 }
 

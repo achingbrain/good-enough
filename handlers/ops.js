@@ -6,8 +6,10 @@ const pretty = require('prettysize')
 const util = require('util')
 const INFO = require('../levels').INFO
 
-module.exports = (stream, event) => {
-  stream.push({
+module.exports = (event) => {
+  const output = []
+
+  output.push({
     host: os.hostname(),
     pid: process.pid,
     request: event.request,
@@ -25,7 +27,7 @@ module.exports = (stream, event) => {
       moment.duration(event.os.uptime * 1000).humanize()
     )
   })
-  stream.push({
+  output.push({
     host: os.hostname(),
     pid: process.pid,
     request: event.request,
@@ -43,36 +45,36 @@ module.exports = (stream, event) => {
     )
   })
 
-  if (!event.load.requests) {
-    return
+  if (event.load.requests) {
+    Object.keys(event.load.requests).forEach((port) => {
+      var requests = event.load.requests[port] || {}
+      var statusCodes = requests.statusCodes || {}
+      var responseTimes = (event.load.responseTimes || {})[port] || {}
+      var concurrents = (event.load.concurrents || {})[port] || 0
+
+      output.push({
+        host: os.hostname(),
+        pid: process.pid,
+        request: event.request,
+        tags: [INFO, 'requests'],
+        timestamp: event.timestamp || new Date(),
+        type: 'ops',
+        level: INFO,
+
+        message: util.format('Port: %s, Total: %d, Disconnects: %d, Status codes: %s, Concurrent: %d, Response times: average %sms, max %sms',
+          port,
+          requests.total,
+          requests.disconnects,
+          Object.keys(statusCodes).map((code) => {
+            return ' ' + code + ': ' + statusCodes[code]
+          }).toString().trim() || '200: 0',
+          concurrents,
+          parseFloat(responseTimes.avg || 0).toFixed(2),
+          parseFloat(responseTimes.max || 0).toFixed(2)
+        )
+      })
+    })
   }
 
-  Object.keys(event.load.requests).forEach((port) => {
-    var requests = event.load.requests[port] || {}
-    var statusCodes = requests.statusCodes || {}
-    var responseTimes = (event.load.responseTimes || {})[port] || {}
-    var concurrents = (event.load.concurrents || {})[port] || 0
-
-    stream.push({
-      host: os.hostname(),
-      pid: process.pid,
-      request: event.request,
-      tags: [INFO, 'requests'],
-      timestamp: event.timestamp || new Date(),
-      type: 'ops',
-      level: INFO,
-
-      message: util.format('Port: %s, Total: %d, Disconnects: %d, Status codes: %s, Concurrent: %d, Response times: average %sms, max %sms',
-        port,
-        requests.total,
-        requests.disconnects,
-        Object.keys(statusCodes).map((code) => {
-          return ' ' + code + ': ' + statusCodes[code]
-        }).toString().trim() || '200: 0',
-        concurrents,
-        parseFloat(responseTimes.avg || 0).toFixed(2),
-        parseFloat(responseTimes.max || 0).toFixed(2)
-      )
-    })
-  })
+  return output
 }

@@ -4,7 +4,7 @@ const os = require('os')
 const LEVELS = Object.keys(require('../levels'))
 const ERROR = require('../levels').ERROR
 
-module.exports = (stream, event) => {
+module.exports = (event) => {
   let message = event.data
 
   if (event.tags.indexOf(ERROR) !== -1) {
@@ -15,7 +15,7 @@ module.exports = (stream, event) => {
     }
   }
 
-  stream.push({
+  return [{
     host: os.hostname(),
     pid: process.pid,
     request: event.id,
@@ -27,5 +27,5 @@ module.exports = (stream, event) => {
     }),
 
     message: message
-  })
+  }]
 }

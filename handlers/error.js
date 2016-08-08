@@ -3,8 +3,8 @@
 const os = require('os')
 const ERROR = require('../levels').ERROR
 
-module.exports = (stream, event) => {
-  stream.push({
+module.exports = (event) => {
+  return [{
     host: os.hostname(),
     pid: process.pid,
     request: event.request,
@@ -14,5 +14,5 @@ module.exports = (stream, event) => {
     level: ERROR,
 
     message: event.error.stack ? event.error.stack : event.error.toString()
-  })
+  }]
 }
